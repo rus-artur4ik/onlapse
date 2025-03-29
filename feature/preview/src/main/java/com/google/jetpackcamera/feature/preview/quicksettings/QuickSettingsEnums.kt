@@ -178,3 +178,60 @@ enum class CameraConcurrentCameraMode : QuickSettingsEnum {
             R.string.quick_settings_concurrent_camera_dual_description
     }
 }
+
+enum class CameraTimelapseFrequency : QuickSettingsEnum {
+    ONE_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_1
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_1_per_day
+    },
+    TWO_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_2
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_2_per_day
+    },
+    FOUR_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_4
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_4_per_day
+    },
+    SIX_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_6
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_6_per_day
+    },
+    TWELVE_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_12
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_12_per_day
+    },
+    TWENTY_FOUR_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_24
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_24_per_day
+    },
+    THIRTY_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_30
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_30_per_day
+    },
+    SIXTY_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_60
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_60_per_day
+    },
+    ONE_HUNDRED_TWENTY_PER_DAY {
+        override fun getDrawableResId() = R.drawable.fpd_120
+        override fun getImageVector() = null
+        override fun getTextResId() = R.string.quick_settings_frequency_shots_per_day
+        override fun getDescriptionResId() = R.string.quick_settings_frequency_120_per_day
+    }
+}

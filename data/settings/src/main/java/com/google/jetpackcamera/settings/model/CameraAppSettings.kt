@@ -24,11 +24,12 @@ val DEFAULT_HDR_IMAGE_OUTPUT = ImageOutputFormat.JPEG_ULTRA_HDR
  * Data layer representation for settings.
  */
 data class CameraAppSettings(
-    val captureMode: CaptureMode = CaptureMode.STANDARD,
+    val captureMode: CaptureMode = CaptureMode.IMAGE_ONLY,
     val cameraLensFacing: LensFacing = LensFacing.BACK,
-    val darkMode: DarkMode = DarkMode.SYSTEM,
+    val darkMode: DarkMode = DarkMode.DARK,
     val flashMode: FlashMode = FlashMode.OFF,
-    val streamConfig: StreamConfig = StreamConfig.MULTI_STREAM,
+    val streamConfig: StreamConfig = StreamConfig.SINGLE_STREAM,
+    val frequencyConfig: TimelapseFrequencyConfig = TimelapseFrequencyConfig.TWENTY_FOUR_PER_DAY,
     val aspectRatio: AspectRatio = AspectRatio.NINE_SIXTEEN,
     val stabilizationMode: StabilizationMode = StabilizationMode.AUTO,
     val dynamicRange: DynamicRange = DynamicRange.SDR,

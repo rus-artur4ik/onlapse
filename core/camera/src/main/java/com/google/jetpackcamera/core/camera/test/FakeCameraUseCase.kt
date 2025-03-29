@@ -33,6 +33,7 @@ import com.google.jetpackcamera.settings.model.ImageOutputFormat
 import com.google.jetpackcamera.settings.model.LensFacing
 import com.google.jetpackcamera.settings.model.StabilizationMode
 import com.google.jetpackcamera.settings.model.StreamConfig
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig
 import com.google.jetpackcamera.settings.model.VideoQuality
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
@@ -198,6 +199,12 @@ class FakeCameraUseCase(defaultCameraSettings: CameraAppSettings = CameraAppSett
     override suspend fun setStreamConfig(streamConfig: StreamConfig) {
         currentSettings.update { old ->
             old.copy(streamConfig = streamConfig)
+        }
+    }
+
+    override suspend fun setFrequencyConfig(frequencyConfig: TimelapseFrequencyConfig) {
+        currentSettings.update { old ->
+            old.copy(frequencyConfig = frequencyConfig)
         }
     }
 

@@ -60,6 +60,7 @@ import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSetFlash
 import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSetHdr
 import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSetRatio
 import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSetStreamConfig
+import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSetTimelapseFrequencyConfig
 import com.google.jetpackcamera.feature.preview.quicksettings.ui.QuickSettingsGrid
 import com.google.jetpackcamera.settings.model.AspectRatio
 import com.google.jetpackcamera.settings.model.CameraAppSettings
@@ -73,6 +74,7 @@ import com.google.jetpackcamera.settings.model.ImageOutputFormat
 import com.google.jetpackcamera.settings.model.LensFacing
 import com.google.jetpackcamera.settings.model.StreamConfig
 import com.google.jetpackcamera.settings.model.TYPICAL_SYSTEM_CONSTRAINTS
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig
 import com.google.jetpackcamera.settings.model.forCurrentLens
 
 /**
@@ -87,6 +89,7 @@ fun QuickSettingsScreenOverlay(
     onFlashModeClick: (flashMode: FlashMode) -> Unit,
     onAspectRatioClick: (aspectRation: AspectRatio) -> Unit,
     onStreamConfigClick: (streamConfig: StreamConfig) -> Unit,
+    onFrequencyConfigClick: (frequencyConfig: TimelapseFrequencyConfig) -> Unit,
     onDynamicRangeClick: (dynamicRange: DynamicRange) -> Unit,
     onImageOutputFormatClick: (imageOutputFormat: ImageOutputFormat) -> Unit,
     onConcurrentCameraModeClick: (concurrentCameraMode: ConcurrentCameraMode) -> Unit,
@@ -142,7 +145,8 @@ fun QuickSettingsScreenOverlay(
                 onStreamConfigClick = onStreamConfigClick,
                 onDynamicRangeClick = onDynamicRangeClick,
                 onImageOutputFormatClick = onImageOutputFormatClick,
-                onConcurrentCameraModeClick = onConcurrentCameraModeClick
+                onConcurrentCameraModeClick = onConcurrentCameraModeClick,
+                onFrequencyConfigClick = onFrequencyConfigClick,
             )
         }
     }
@@ -172,7 +176,8 @@ private fun ExpandedQuickSettingsUi(
     setFocusedQuickSetting: (FocusedQuickSetting) -> Unit,
     onDynamicRangeClick: (dynamicRange: DynamicRange) -> Unit,
     onImageOutputFormatClick: (imageOutputFormat: ImageOutputFormat) -> Unit,
-    onConcurrentCameraModeClick: (concurrentCameraMode: ConcurrentCameraMode) -> Unit
+    onConcurrentCameraModeClick: (concurrentCameraMode: ConcurrentCameraMode) -> Unit,
+    onFrequencyConfigClick: (frequencyConfig: TimelapseFrequencyConfig) -> Unit
 ) {
     Column(
         modifier =
@@ -291,6 +296,13 @@ private fun ExpandedQuickSettingsUi(
                                     )
                         )
                     }
+
+                    add {
+                        QuickSetTimelapseFrequencyConfig(
+                            setTimelapseConfig = { onFrequencyConfigClick(it) },
+                            currentFrequencyConfig = currentCameraSettings.frequencyConfig,
+                        )
+                    }
                 }
             QuickSettingsGrid(quickSettingsButtons = displayedQuickSettings)
         }
@@ -331,7 +343,8 @@ fun ExpandedQuickSettingsUiPreview() {
             onStreamConfigClick = { },
             onDynamicRangeClick = { },
             onImageOutputFormatClick = { },
-            onConcurrentCameraModeClick = { }
+            onConcurrentCameraModeClick = { },
+            onFrequencyConfigClick = { },
         )
     }
 }
@@ -357,7 +370,8 @@ fun ExpandedQuickSettingsUiPreview_WithHdr() {
             onStreamConfigClick = { },
             onDynamicRangeClick = { },
             onImageOutputFormatClick = { },
-            onConcurrentCameraModeClick = { }
+            onConcurrentCameraModeClick = { },
+            onFrequencyConfigClick = { },
         )
     }
 }

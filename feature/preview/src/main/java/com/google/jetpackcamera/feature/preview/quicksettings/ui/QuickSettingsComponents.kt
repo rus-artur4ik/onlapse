@@ -61,6 +61,7 @@ import com.google.jetpackcamera.feature.preview.quicksettings.CameraDynamicRange
 import com.google.jetpackcamera.feature.preview.quicksettings.CameraFlashMode
 import com.google.jetpackcamera.feature.preview.quicksettings.CameraLensFace
 import com.google.jetpackcamera.feature.preview.quicksettings.CameraStreamConfig
+import com.google.jetpackcamera.feature.preview.quicksettings.CameraTimelapseFrequency
 import com.google.jetpackcamera.feature.preview.quicksettings.QuickSettingsEnum
 import com.google.jetpackcamera.settings.model.AspectRatio
 import com.google.jetpackcamera.settings.model.ConcurrentCameraMode
@@ -71,6 +72,16 @@ import com.google.jetpackcamera.settings.model.FlashMode
 import com.google.jetpackcamera.settings.model.ImageOutputFormat
 import com.google.jetpackcamera.settings.model.LensFacing
 import com.google.jetpackcamera.settings.model.StreamConfig
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.FOUR_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.ONE_HUNDRED_TWENTY_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.ONE_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.SIXTY_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.SIX_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.THIRTY_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.TWELVE_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.TWENTY_FOUR_PER_DAY
+import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig.TWO_PER_DAY
 import kotlin.math.min
 
 // completed components ready to go into preview screen
@@ -271,6 +282,44 @@ fun QuickSetConcurrentCamera(
             when (currentConcurrentCameraMode) {
                 ConcurrentCameraMode.OFF -> setConcurrentCameraMode(ConcurrentCameraMode.DUAL)
                 ConcurrentCameraMode.DUAL -> setConcurrentCameraMode(ConcurrentCameraMode.OFF)
+            }
+        },
+        enabled = enabled
+    )
+}
+
+@Composable
+fun QuickSetTimelapseFrequencyConfig(
+    setTimelapseConfig: (TimelapseFrequencyConfig) -> Unit,
+    currentFrequencyConfig: TimelapseFrequencyConfig,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val enum: CameraTimelapseFrequency = when (currentFrequencyConfig) {
+            ONE_PER_DAY -> CameraTimelapseFrequency.ONE_PER_DAY
+            TWO_PER_DAY -> CameraTimelapseFrequency.TWO_PER_DAY
+            FOUR_PER_DAY -> CameraTimelapseFrequency.FOUR_PER_DAY
+            SIX_PER_DAY -> CameraTimelapseFrequency.SIX_PER_DAY
+            TWELVE_PER_DAY -> CameraTimelapseFrequency.TWELVE_PER_DAY
+            TWENTY_FOUR_PER_DAY -> CameraTimelapseFrequency.TWENTY_FOUR_PER_DAY
+            THIRTY_PER_DAY -> CameraTimelapseFrequency.THIRTY_PER_DAY
+            SIXTY_PER_DAY -> CameraTimelapseFrequency.SIXTY_PER_DAY
+            ONE_HUNDRED_TWENTY_PER_DAY -> CameraTimelapseFrequency.ONE_HUNDRED_TWENTY_PER_DAY
+        }
+    QuickSettingUiItem(
+        modifier = modifier,
+        enum = enum,
+        onClick = {
+            when (currentFrequencyConfig) {
+                ONE_PER_DAY -> setTimelapseConfig(TWO_PER_DAY)
+                TWO_PER_DAY -> setTimelapseConfig(FOUR_PER_DAY)
+                FOUR_PER_DAY -> setTimelapseConfig(SIX_PER_DAY)
+                SIX_PER_DAY -> setTimelapseConfig(TWELVE_PER_DAY)
+                TWELVE_PER_DAY -> setTimelapseConfig(TWENTY_FOUR_PER_DAY)
+                TWENTY_FOUR_PER_DAY -> setTimelapseConfig(THIRTY_PER_DAY)
+                THIRTY_PER_DAY -> setTimelapseConfig(SIXTY_PER_DAY)
+                SIXTY_PER_DAY -> setTimelapseConfig(ONE_HUNDRED_TWENTY_PER_DAY)
+                ONE_HUNDRED_TWENTY_PER_DAY -> setTimelapseConfig(ONE_PER_DAY)
             }
         },
         enabled = enabled

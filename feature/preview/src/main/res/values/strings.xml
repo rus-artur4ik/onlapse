@@ -97,4 +97,15 @@
     <string name="quick_settings_concurrent_camera_dual">DUAL</string>
     <string name="quick_settings_concurrent_camera_off_description">Concurrent cameras off</string>
     <string name="quick_settings_concurrent_camera_dual_description">Concurrent dual camera on</string>
+
+    <string name="quick_settings_frequency_shots_per_day">shots per day</string>
+    <string name="quick_settings_frequency_1_per_day">1 shot per day</string>
+    <string name="quick_settings_frequency_2_per_day">2 shots per day</string>
+    <string name="quick_settings_frequency_4_per_day">4 shots per day</string>
+    <string name="quick_settings_frequency_6_per_day">6 shots per day</string>
+    <string name="quick_settings_frequency_12_per_day">12 shots per day</string>
+    <string name="quick_settings_frequency_24_per_day">24 shots per day</string>
+    <string name="quick_settings_frequency_30_per_day">30 shots per day</string>
+    <string name="quick_settings_frequency_60_per_day">60 shots per day</string>
+    <string name="quick_settings_frequency_120_per_day">120 shots per day</string>
 </resources>

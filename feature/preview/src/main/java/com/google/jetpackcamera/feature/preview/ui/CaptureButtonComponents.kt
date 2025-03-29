@@ -28,7 +28,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -42,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
@@ -334,22 +334,11 @@ private fun CaptureButton(
         captureButtonSize = captureButtonSize,
         color = currentColor
     ) {
-        if (useLockSwitch) {
-            LockSwitchCaptureButtonNucleus(
-                captureButtonUiState = captureButtonUiState,
-                captureButtonSize = captureButtonSize,
-                switchWidth = switchWidth,
-                switchPosition = switchPosition,
-                onToggleSwitchPosition = { toggleSwitchPosition() },
-                shouldBeLocked = { shouldBeLocked() }
-            )
-        } else {
-            CaptureButtonNucleus(
-                captureButtonUiState = captureButtonUiState,
-                isPressed = isCaptureButtonPressed,
-                captureButtonSize = captureButtonSize
-            )
-        }
+        CaptureButtonNucleus(
+            captureButtonUiState = captureButtonUiState,
+            isPressed = isCaptureButtonPressed,
+            captureButtonSize = captureButtonSize
+        )
     }
 }
 
@@ -358,19 +347,18 @@ fun CaptureButtonRing(
     modifier: Modifier = Modifier,
     captureButtonSize: Float,
     color: Color,
-    borderWidth: Float = 4f,
     contents: (@Composable () -> Unit)? = null
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         contents?.invoke()
         // todo(): use a canvas instead of a box.
         //  the sizing gets funny so the scales need to be completely readjusted
-        Box(
+        Icon(
+            imageVector = Icons.Default.Timelapse,
+            tint = color,
+            contentDescription = null,
             modifier = Modifier
-                .size(
-                    captureButtonSize.dp
-                )
-                .border(borderWidth.dp, color, CircleShape)
+                .size(captureButtonSize.dp)
         )
     }
 }
