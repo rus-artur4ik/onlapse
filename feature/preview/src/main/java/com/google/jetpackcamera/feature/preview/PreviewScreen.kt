@@ -63,7 +63,6 @@ import com.google.jetpackcamera.feature.preview.ui.ZoomLevelDisplayState
 import com.google.jetpackcamera.feature.preview.ui.debouncedOrientationFlow
 import com.google.jetpackcamera.feature.preview.ui.debug.DebugOverlayComponent
 import com.google.jetpackcamera.settings.model.AspectRatio
-import com.google.jetpackcamera.settings.model.CaptureMode
 import com.google.jetpackcamera.settings.model.ConcurrentCameraMode
 import com.google.jetpackcamera.settings.model.DEFAULT_CAMERA_APP_SETTINGS
 import com.google.jetpackcamera.settings.model.DynamicRange
@@ -369,7 +368,7 @@ private fun ContentScreen_ImageOnly_Idle() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         ContentScreen(
             previewUiState = FAKE_PREVIEW_UI_STATE_READY.copy(
-                captureButtonUiState = CaptureButtonUiState.Enabled.Idle(CaptureMode.IMAGE_ONLY)
+                captureButtonUiState = CaptureButtonUiState.Enabled.Idle
             ),
             screenFlashUiState = ScreenFlash.ScreenFlashUiState(),
             surfaceRequest = null
@@ -383,7 +382,7 @@ private fun ContentScreen_VideoOnly_Idle() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         ContentScreen(
             previewUiState = FAKE_PREVIEW_UI_STATE_READY.copy(
-                captureButtonUiState = CaptureButtonUiState.Enabled.Idle(CaptureMode.VIDEO_ONLY)
+                captureButtonUiState = CaptureButtonUiState.Enabled.Idle
             ),
             screenFlashUiState = ScreenFlash.ScreenFlashUiState(),
             surfaceRequest = null
@@ -403,18 +402,6 @@ private fun ContentScreen_Standard_Recording() {
     }
 }
 
-@Preview
-@Composable
-private fun ContentScreen_Locked_Recording() {
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        ContentScreen(
-            previewUiState = FAKE_PREVIEW_UI_STATE_LOCKED_RECORDING,
-            screenFlashUiState = ScreenFlash.ScreenFlashUiState(),
-            surfaceRequest = null
-        )
-    }
-}
-
 private val FAKE_PREVIEW_UI_STATE_READY = PreviewUiState.Ready(
     currentCameraSettings = DEFAULT_CAMERA_APP_SETTINGS,
     videoRecordingState = VideoRecordingState.Inactive(),
@@ -425,12 +412,6 @@ private val FAKE_PREVIEW_UI_STATE_READY = PreviewUiState.Ready(
 
 private val FAKE_PREVIEW_UI_STATE_PRESSED_RECORDING = FAKE_PREVIEW_UI_STATE_READY.copy(
     videoRecordingState = VideoRecordingState.Active.Recording(0, 0.0, 0),
-    captureButtonUiState = CaptureButtonUiState.Enabled.Recording.PressedRecording,
-    audioUiState = AudioUiState.Enabled.On(1.0)
-)
-
-private val FAKE_PREVIEW_UI_STATE_LOCKED_RECORDING = FAKE_PREVIEW_UI_STATE_READY.copy(
-    videoRecordingState = VideoRecordingState.Active.Recording(0, 0.0, 0),
-    captureButtonUiState = CaptureButtonUiState.Enabled.Recording.LockedRecording,
+    captureButtonUiState = CaptureButtonUiState.Enabled.RecordingTimelapse,
     audioUiState = AudioUiState.Enabled.On(1.0)
 )

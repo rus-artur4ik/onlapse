@@ -15,13 +15,13 @@
  */
 package com.google.jetpackcamera.feature.preview.ui
 
+import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.compose.CameraXViewfinder
-import androidx.camera.core.DynamicRange as CXDynamicRange
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.viewfinder.compose.MutableCoordinateTransformer
 import androidx.camera.viewfinder.core.ImplementationMode
@@ -47,7 +47,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,7 +58,6 @@ import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoStable
 import androidx.compose.material.icons.filled.Videocam
@@ -117,13 +115,13 @@ import com.google.jetpackcamera.settings.model.AspectRatio
 import com.google.jetpackcamera.settings.model.LensFacing
 import com.google.jetpackcamera.settings.model.StabilizationMode
 import com.google.jetpackcamera.settings.model.VideoQuality
-import kotlin.compareTo
-import kotlin.time.Duration.Companion.nanoseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlin.time.Duration.Companion.nanoseconds
+import androidx.camera.core.DynamicRange as CXDynamicRange
 
 private const val TAG = "PreviewScreen"
 private const val BLINK_TIME = 100L
@@ -165,7 +163,7 @@ fun PauseResumeToggleButton(
                 .clickable(
                     onClick = {
                         buttonClicked = true
-                        onSetPause(currentRecordingState !is VideoRecordingState.Active.Paused)
+                        onSetPause(true)
                     },
                     indication = null,
                     interactionSource = null
@@ -184,7 +182,6 @@ fun PauseResumeToggleButton(
                 tint = Color.Red,
                 imageVector = when (currentRecordingState) {
                     is VideoRecordingState.Active.Recording -> Icons.Filled.Pause
-                    is VideoRecordingState.Active.Paused -> Icons.Filled.PlayArrow
                 },
                 contentDescription = "pause resume toggle"
             )
@@ -405,6 +402,7 @@ fun DetectWindowColorModeChanges(
  * this is the preview surface display. This view implements gestures tap to focus, pinch to zoom,
  * and double-tap to flip camera
  */
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun PreviewDisplay(
     previewUiState: PreviewUiState.Ready,

@@ -21,7 +21,6 @@ import com.google.jetpackcamera.feature.preview.ui.ImageWellUiState
 import com.google.jetpackcamera.feature.preview.ui.SnackbarData
 import com.google.jetpackcamera.feature.preview.ui.ToastMessage
 import com.google.jetpackcamera.settings.model.CameraAppSettings
-import com.google.jetpackcamera.settings.model.CaptureMode
 import com.google.jetpackcamera.settings.model.FlashMode
 import com.google.jetpackcamera.settings.model.StabilizationMode
 import com.google.jetpackcamera.settings.model.SystemConstraints
@@ -69,17 +68,13 @@ data class DebugUiState(
     val isDebugMode: Boolean = false,
     val isDebugOverlayOpen: Boolean = false
 )
-val DEFAULT_CAPTURE_BUTTON_STATE = CaptureButtonUiState.Enabled.Idle(CaptureMode.STANDARD)
+val DEFAULT_CAPTURE_BUTTON_STATE = CaptureButtonUiState.Enabled.Idle
 
 sealed interface CaptureButtonUiState {
     data object Unavailable : CaptureButtonUiState
     sealed interface Enabled : CaptureButtonUiState {
-        data class Idle(val captureMode: CaptureMode) : Enabled
-
-        sealed interface Recording : Enabled {
-            data object PressedRecording : Recording
-            data object LockedRecording : Recording
-        }
+        data object Idle : Enabled
+        data object RecordingTimelapse : Enabled
     }
 }
 sealed interface ElapsedTimeUiState {

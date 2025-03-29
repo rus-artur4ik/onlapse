@@ -256,8 +256,6 @@ class PreviewViewModel @AssistedInject constructor(
 
         is VideoRecordingState.Inactive ->
             ElapsedTimeUiState.Enabled(videoRecordingState.finalElapsedTimeNanos)
-
-        VideoRecordingState.Starting -> ElapsedTimeUiState.Enabled(0L)
     }
 
     /**
@@ -427,21 +425,10 @@ class PreviewViewModel @AssistedInject constructor(
         lockedState: Boolean
     ): CaptureButtonUiState = when (cameraState.videoRecordingState) {
         // if not currently recording, check capturemode to determine idle capture button UI
-        is VideoRecordingState.Inactive ->
-            CaptureButtonUiState
-                .Enabled.Idle(captureMode = cameraAppSettings.captureMode)
+        is VideoRecordingState.Inactive -> CaptureButtonUiState.Enabled.Idle
 
         // display different capture button UI depending on if recording is pressed or locked
-        is VideoRecordingState.Active.Recording, is VideoRecordingState.Active.Paused ->
-            if (lockedState) {
-                CaptureButtonUiState.Enabled.Recording.LockedRecording
-            } else {
-                CaptureButtonUiState.Enabled.Recording.PressedRecording
-            }
-
-        VideoRecordingState.Starting ->
-            CaptureButtonUiState
-                .Enabled.Idle(captureMode = cameraAppSettings.captureMode)
+        is VideoRecordingState.Active.Recording -> CaptureButtonUiState.Enabled.RecordingTimelapse
     }
 
     private fun getCaptureToggleUiState(

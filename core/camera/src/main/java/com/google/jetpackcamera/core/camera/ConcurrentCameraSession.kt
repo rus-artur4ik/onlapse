@@ -108,13 +108,6 @@ internal suspend fun runConcurrentCameraSession(
         }
 
         launch {
-            processVideoControlEvents(
-                useCaseGroup.getVideoCapture(),
-                captureTypeSuffix = "DualCam"
-            )
-        }
-
-        launch {
             sessionSettings.primaryCameraInfo.torchState.asFlow().collectLatest { torchState ->
                 currentCameraState.update { old ->
                     old.copy(torchEnabled = torchState == TorchState.ON)

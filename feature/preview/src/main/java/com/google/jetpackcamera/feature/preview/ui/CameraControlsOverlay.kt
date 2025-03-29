@@ -482,33 +482,6 @@ private fun CaptureButton(
                 onToggleQuickSettings()
             }
         },
-        onStartRecording = {
-            if (captureButtonUiState is CaptureButtonUiState.Enabled) {
-                when (previewMode) {
-                    is PreviewMode.StandardMode -> {
-                        onStartVideoRecording(null, false) {}
-                    }
-
-                    is PreviewMode.ExternalVideoCaptureMode -> {
-                        onStartVideoRecording(
-                            previewMode.videoCaptureUri,
-                            true,
-                            previewMode.onVideoCapture
-                        )
-                    }
-
-                    else -> {
-                        onStartVideoRecording(null, false) {}
-                    }
-                }
-                if (isQuickSettingsOpen) {
-                    onToggleQuickSettings()
-                }
-            }
-        },
-        onStopRecording = {
-            onStopVideoRecording()
-        },
         captureButtonUiState = captureButtonUiState,
         onLockVideoRecording = onLockVideoRecording
     )

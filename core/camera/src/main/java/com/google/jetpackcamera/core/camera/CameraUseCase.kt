@@ -155,12 +155,6 @@ interface CameraUseCase {
 sealed interface VideoRecordingState {
 
     /**
-     * [PendingRecording][androidx.camera.video.PendingRecording] has not yet started but is about to.
-     * This state may be used as a signal to start processes just before the recording actually starts.
-     */
-    data object Starting : VideoRecordingState
-
-    /**
      * Camera is not currently recording a video
      */
     data class Inactive(val finalElapsedTimeNanos: Long = 0) : VideoRecordingState
@@ -174,12 +168,6 @@ sealed interface VideoRecordingState {
         val elapsedTimeNanos: Long
 
         data class Recording(
-            override val maxDurationMillis: Long,
-            override val audioAmplitude: Double,
-            override val elapsedTimeNanos: Long
-        ) : Active
-
-        data class Paused(
             override val maxDurationMillis: Long,
             override val audioAmplitude: Double,
             override val elapsedTimeNanos: Long

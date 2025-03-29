@@ -15,10 +15,8 @@
  */
 package com.google.jetpackcamera.core.camera
 
-import android.Manifest
 import android.content.ContentValues
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraMetadata
@@ -58,13 +56,7 @@ import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.PendingRecording
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_DURATION_LIMIT_REACHED
-import androidx.camera.video.VideoRecordEvent.Finalize.ERROR_NONE
-import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.asFlow
 import com.google.jetpackcamera.core.camera.effects.SingleSurfaceForcingEffect
 import com.google.jetpackcamera.settings.model.AspectRatio
@@ -82,18 +74,10 @@ import com.google.jetpackcamera.settings.model.VideoQuality.FHD
 import com.google.jetpackcamera.settings.model.VideoQuality.HD
 import com.google.jetpackcamera.settings.model.VideoQuality.SD
 import com.google.jetpackcamera.settings.model.VideoQuality.UHD
-import java.io.File
-import java.util.Date
-import java.util.concurrent.Executor
-import kotlin.coroutines.ContinuationInterceptor
-import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asExecutor
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -104,6 +88,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.Date
+import kotlin.math.abs
 
 private const val TAG = "CameraSession"
 private val QUALITY_RANGE_MAP = mapOf(
@@ -138,16 +125,6 @@ internal suspend fun runSingleCameraSession(
         else -> {
             null
         }
-    }
-
-    launch {
-        processVideoControlEvents(
-            videoCaptureUseCase,
-            captureTypeSuffix = when (sessionSettings.streamConfig) {
-                StreamConfig.MULTI_STREAM -> "MultiStream"
-                StreamConfig.SINGLE_STREAM -> "SingleStream"
-            }
-        )
     }
 
     transientSettings.filterNotNull().distinctUntilChanged { old, new ->
@@ -701,242 +678,6 @@ private fun getPendingRecording(
 }
 
 context(CameraSessionContext)
-private suspend fun startVideoRecordingInternal(
-    isInitialAudioEnabled: Boolean,
-    context: Context,
-    pendingRecord: PendingRecording,
-    maxDurationMillis: Long,
-    onVideoRecord: (CameraUseCase.OnVideoRecordEvent) -> Unit
-): Recording {
-    Log.d(TAG, "recordVideo")
-    // todo(b/336886716): default setting to enable or disable audio when permission is granted
-    // set the camerastate to starting
-    currentCameraState.update { old ->
-        old.copy(videoRecordingState = VideoRecordingState.Starting)
-    }
-
-    // ok. there is a difference between MUTING and ENABLING audio
-    // audio must be enabled in order to be muted
-    // if the video recording isn't started with audio enabled, you will not be able to un-mute it
-    // the toggle should only affect whether or not the audio is muted.
-    // the permission will determine whether or not the audio is enabled.
-    val isAudioGranted = checkSelfPermission(
-        context,
-        Manifest.permission.RECORD_AUDIO
-    ) == PackageManager.PERMISSION_GRANTED
-
-    pendingRecord.apply {
-        if (isAudioGranted) {
-            Log.d(TAG, "INITIAL AUDIO $isInitialAudioEnabled")
-            withAudioEnabled(isInitialAudioEnabled)
-        }
-    }
-        .asPersistentRecording()
-
-    val callbackExecutor: Executor =
-        (
-            currentCoroutineContext()[ContinuationInterceptor] as?
-                CoroutineDispatcher
-            )?.asExecutor() ?: ContextCompat.getMainExecutor(context)
-    return pendingRecord.start(callbackExecutor) { onVideoRecordEvent ->
-        Log.d(TAG, onVideoRecordEvent.toString())
-        when (onVideoRecordEvent) {
-            is VideoRecordEvent.Start -> {
-                currentCameraState.update { old ->
-                    old.copy(
-                        videoRecordingState = VideoRecordingState.Active.Recording(
-                            audioAmplitude = onVideoRecordEvent.recordingStats.audioStats
-                                .audioAmplitude,
-                            maxDurationMillis = maxDurationMillis,
-                            elapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                .recordedDurationNanos
-                        )
-                    )
-                }
-            }
-
-            is VideoRecordEvent.Pause -> {
-                currentCameraState.update { old ->
-                    old.copy(
-                        videoRecordingState = VideoRecordingState.Active.Paused(
-                            audioAmplitude = onVideoRecordEvent.recordingStats.audioStats
-                                .audioAmplitude,
-                            maxDurationMillis = maxDurationMillis,
-                            elapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                .recordedDurationNanos
-                        )
-                    )
-                }
-            }
-
-            is VideoRecordEvent.Resume -> {
-                currentCameraState.update { old ->
-                    old.copy(
-                        videoRecordingState = VideoRecordingState.Active.Recording(
-                            audioAmplitude = onVideoRecordEvent.recordingStats.audioStats
-                                .audioAmplitude,
-                            maxDurationMillis = maxDurationMillis,
-                            elapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                .recordedDurationNanos
-                        )
-                    )
-                }
-            }
-
-            is VideoRecordEvent.Status -> {
-                currentCameraState.update { old ->
-                    // don't want to change state from paused to recording if status changes while paused
-                    if (old.videoRecordingState is VideoRecordingState.Active.Paused) {
-                        old.copy(
-                            videoRecordingState = VideoRecordingState.Active.Paused(
-                                audioAmplitude = onVideoRecordEvent.recordingStats.audioStats
-                                    .audioAmplitude,
-                                maxDurationMillis = maxDurationMillis,
-                                elapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                    .recordedDurationNanos
-                            )
-                        )
-                    } else {
-                        old.copy(
-                            videoRecordingState = VideoRecordingState.Active.Recording(
-                                audioAmplitude = onVideoRecordEvent.recordingStats.audioStats
-                                    .audioAmplitude,
-                                maxDurationMillis = maxDurationMillis,
-                                elapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                    .recordedDurationNanos
-                            )
-                        )
-                    }
-                }
-            }
-
-            is VideoRecordEvent.Finalize -> {
-                when (onVideoRecordEvent.error) {
-                    ERROR_NONE -> {
-                        // update recording state to inactive with the final values of the recording.
-                        currentCameraState.update { old ->
-                            old.copy(
-                                videoRecordingState = VideoRecordingState.Inactive(
-                                    finalElapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                        .recordedDurationNanos
-                                )
-                            )
-                        }
-                        onVideoRecord(
-                            CameraUseCase.OnVideoRecordEvent.OnVideoRecorded(
-                                onVideoRecordEvent.outputResults.outputUri
-                            )
-                        )
-                    }
-
-                    ERROR_DURATION_LIMIT_REACHED -> {
-                        currentCameraState.update { old ->
-                            old.copy(
-                                videoRecordingState = VideoRecordingState.Inactive(
-                                    finalElapsedTimeNanos = maxDurationMillis.milliseconds
-                                        .inWholeNanoseconds
-                                )
-                            )
-                        }
-
-                        onVideoRecord(
-                            CameraUseCase.OnVideoRecordEvent.OnVideoRecorded(
-                                onVideoRecordEvent.outputResults.outputUri
-                            )
-                        )
-                    }
-
-                    else -> {
-                        onVideoRecord(
-                            CameraUseCase.OnVideoRecordEvent.OnVideoRecordError(
-                                RuntimeException(
-                                    "Recording finished with error: ${onVideoRecordEvent.error}",
-                                    onVideoRecordEvent.cause
-                                )
-                            )
-                        )
-                        currentCameraState.update { old ->
-                            old.copy(
-                                videoRecordingState = VideoRecordingState.Inactive(
-                                    finalElapsedTimeNanos = onVideoRecordEvent.recordingStats
-                                        .recordedDurationNanos
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }.apply {
-        mute(!isInitialAudioEnabled)
-    }
-}
-
-context(CameraSessionContext)
-private suspend fun runVideoRecording(
-    videoCapture: VideoCapture<Recorder>,
-    captureTypeSuffix: String,
-    context: Context,
-    maxDurationMillis: Long,
-    transientSettings: StateFlow<TransientSessionSettings?>,
-    videoCaptureUri: Uri?,
-    videoControlEvents: Channel<VideoCaptureControlEvent>,
-    shouldUseUri: Boolean,
-    onVideoRecord: (CameraUseCase.OnVideoRecordEvent) -> Unit
-) = coroutineScope {
-    var currentSettings = transientSettings.filterNotNull().first()
-
-    getPendingRecording(
-        context,
-        videoCapture,
-        maxDurationMillis,
-        captureTypeSuffix,
-        videoCaptureUri,
-        shouldUseUri,
-        onVideoRecord
-    )?.let {
-        startVideoRecordingInternal(
-            isInitialAudioEnabled = currentSettings.isAudioEnabled,
-            context = context,
-            pendingRecord = it,
-            maxDurationMillis = maxDurationMillis,
-            onVideoRecord = onVideoRecord
-        ).use { recording ->
-            val recordingSettingsUpdater = launch {
-                fun TransientSessionSettings.isFlashModeOn() = flashMode == FlashMode.ON
-
-                transientSettings.filterNotNull()
-                    .collectLatest { newTransientSettings ->
-                        if (currentSettings.isAudioEnabled != newTransientSettings.isAudioEnabled) {
-                            recording.mute(newTransientSettings.isAudioEnabled)
-                        }
-                        if (currentSettings.isFlashModeOn() !=
-                            newTransientSettings.isFlashModeOn()
-                        ) {
-                            currentSettings = newTransientSettings
-                        }
-                    }
-            }
-
-            for (event in videoControlEvents) {
-                when (event) {
-                    is VideoCaptureControlEvent.StartRecordingEvent ->
-                        throw IllegalStateException("A recording is already in progress")
-
-                    VideoCaptureControlEvent.StopRecordingEvent -> {
-                        recordingSettingsUpdater.cancel()
-                        break
-                    }
-
-                    VideoCaptureControlEvent.PauseRecordingEvent -> recording.pause()
-                    VideoCaptureControlEvent.ResumeRecordingEvent -> recording.resume()
-                }
-            }
-        }
-    }
-}
-
-context(CameraSessionContext)
 internal suspend fun processFocusMeteringEvents(cameraControl: CameraControl) {
     surfaceRequests.map { surfaceRequest ->
         surfaceRequest?.resolution?.run {
@@ -957,37 +698,6 @@ internal suspend fun processFocusMeteringEvents(cameraControl: CameraControl) {
             } ?: run {
                 Log.w(TAG, "Ignoring event due to no SurfaceRequest: $event")
             }
-        }
-    }
-}
-
-context(CameraSessionContext)
-internal suspend fun processVideoControlEvents(
-    videoCapture: VideoCapture<Recorder>?,
-    captureTypeSuffix: String
-) = coroutineScope {
-    for (event in videoCaptureControlEvents) {
-        when (event) {
-            is VideoCaptureControlEvent.StartRecordingEvent -> {
-                if (videoCapture == null) {
-                    throw RuntimeException(
-                        "Attempted video recording with null videoCapture"
-                    )
-                }
-                runVideoRecording(
-                    videoCapture,
-                    captureTypeSuffix,
-                    context,
-                    event.maxVideoDuration,
-                    transientSettings,
-                    event.videoCaptureUri,
-                    videoCaptureControlEvents,
-                    event.shouldUseUri,
-                    event.onVideoRecord
-                )
-            }
-
-            else -> {}
         }
     }
 }
