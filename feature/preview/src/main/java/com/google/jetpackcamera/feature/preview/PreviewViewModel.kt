@@ -15,7 +15,9 @@
  */
 package com.google.jetpackcamera.feature.preview
 
+import android.app.Application
 import android.content.ContentResolver
+import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
@@ -25,6 +27,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.tracing.Trace
 import androidx.tracing.traceAsync
+import com.agarsoft.onlapse.timelapse.TimelapseCommand
+import com.agarsoft.onlapse.timelapse.TimelapseCommands
+import com.agarsoft.onlapse.timelapse.TimelapseInteractor
 import com.google.jetpackcamera.core.camera.CameraState
 import com.google.jetpackcamera.core.camera.CameraUseCase
 import com.google.jetpackcamera.core.camera.VideoRecordingState
@@ -73,6 +78,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
@@ -94,7 +101,9 @@ class PreviewViewModel @AssistedInject constructor(
     @Assisted val isDebugMode: Boolean,
     private val cameraUseCase: CameraUseCase,
     private val settingsRepository: SettingsRepository,
-    private val constraintsRepository: ConstraintsRepository
+    private val constraintsRepository: ConstraintsRepository,
+    private val timelapseInteractor: TimelapseInteractor,
+    private val application: Application,
 ) : ViewModel() {
     private val _previewUiState: MutableStateFlow<PreviewUiState> =
         MutableStateFlow(PreviewUiState.NotReady)
@@ -228,15 +237,85 @@ class PreviewViewModel @AssistedInject constructor(
                             cameraState.videoRecordingState
                         ),
                         elapsedTimeUiState = getElapsedTimeUiState(cameraState.videoRecordingState),
-                        captureButtonUiState = getCaptureButtonUiState(
-                            cameraAppSettings,
-                            cameraState,
-                            lockedState
-                        )
+                        captureButtonUiState = getCaptureButtonUiState(cameraState)
                     )
                 }
             }.collect {}
         }
+
+        TimelapseCommands.flow
+            .onEach {
+                when (it) {
+                    is TimelapseCommand.CaptureImage -> {
+                        captureTimelapseShot { event, uriIndex ->
+                            when (event) {
+                                is ImageCaptureEvent.ImageSaved -> {
+                                    addSnackBarData(
+                                        SnackbarData(
+                                            cookie = IMAGE_CAPTURE_SUCCESS_TAG,
+                                            stringResource = R.string.toast_image_capture_success,
+                                            withDismissAction = true
+                                        )
+                                    )
+                                }
+                                is ImageCaptureEvent.ImageCaptureError -> {
+                                    addSnackBarData(
+                                        SnackbarData(
+                                            cookie = IMAGE_CAPTURE_FAILURE_TAG,
+                                            stringResource = R.string.toast_capture_failure,
+                                            withDismissAction = true
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    // TODO restrict or check uri to make it not to be lost
+    private suspend fun captureTimelapseShot(
+        onImageCapture: (ImageCaptureEvent, Int) -> Unit
+    ) {
+        val (uriIndex: Int, finalImageUri: Uri?) =
+            (
+                (previewUiState.value as? PreviewUiState.Ready)?.previewMode as?
+                        PreviewMode.ExternalMultipleImageCaptureMode
+                )?.let {
+                    val uri = if (it.imageCaptureUris.isNullOrEmpty()) {
+                        null
+                    } else {
+                        it.imageCaptureUris[externalUriIndex]
+                    }
+                    Pair(externalUriIndex, uri)
+                } ?: Pair(-1, null)
+        captureImageInternal(
+            doTakePicture = {
+                cameraUseCase.takePicture(
+                    {
+                        _previewUiState.update { old ->
+                            (old as? PreviewUiState.Ready)?.copy(
+                                lastBlinkTimeStamp = System.currentTimeMillis()
+                            ) ?: old
+                        }
+                    },
+                    application.contentResolver,
+                    finalImageUri,
+                    true
+                ).savedUri
+            },
+            onSuccess = { savedUri ->
+                savedUri?.let {
+                    updateLastCapturedImageUri(it)
+                }
+                onImageCapture(ImageCaptureEvent.ImageSaved(savedUri), uriIndex)
+            },
+            onFailure = { exception ->
+                onImageCapture(ImageCaptureEvent.ImageCaptureError(exception), uriIndex)
+            }
+        )
     }
 
     fun updateLastCapturedImageUri(uri: Uri) {
@@ -420,9 +499,7 @@ class PreviewViewModel @AssistedInject constructor(
         }
     }
     fun getCaptureButtonUiState(
-        cameraAppSettings: CameraAppSettings,
         cameraState: CameraState,
-        lockedState: Boolean
     ): CaptureButtonUiState = when (cameraState.videoRecordingState) {
         // if not currently recording, check capturemode to determine idle capture button UI
         is VideoRecordingState.Inactive -> CaptureButtonUiState.Enabled.Idle
@@ -674,9 +751,9 @@ class PreviewViewModel @AssistedInject constructor(
                 val newQueue = LinkedList((old as? PreviewUiState.Ready)?.snackBarQueue!!)
                 newQueue.add(snackBarData)
                 Log.d(TAG, "SnackBar added. Queue size: ${newQueue.size}")
-                (old as? PreviewUiState.Ready)?.copy(
+                old.copy(
                     snackBarQueue = newQueue
-                ) ?: old
+                )
             }
         }
     }
@@ -696,7 +773,8 @@ class PreviewViewModel @AssistedInject constructor(
         contentResolver: ContentResolver,
         imageCaptureUri: Uri?,
         ignoreUri: Boolean = false,
-        onImageCapture: (ImageCaptureEvent, Int) -> Unit
+        onImageCapture: (ImageCaptureEvent, Int) -> Unit,
+        context: Context,
     ) {
         if (previewUiState.value is PreviewUiState.Ready &&
             (previewUiState.value as PreviewUiState.Ready).previewMode is
@@ -722,37 +800,11 @@ class PreviewViewModel @AssistedInject constructor(
         }
         Log.d(TAG, "captureImageWithUri")
         viewModelScope.launch {
-            val (uriIndex: Int, finalImageUri: Uri?) =
-                (
-                    (previewUiState.value as? PreviewUiState.Ready)?.previewMode as?
-                        PreviewMode.ExternalMultipleImageCaptureMode
-                    )?.let {
-                    val uri = if (ignoreUri || it.imageCaptureUris.isNullOrEmpty()) {
-                        null
-                    } else {
-                        it.imageCaptureUris[externalUriIndex]
-                    }
-                    Pair(externalUriIndex, uri)
-                } ?: Pair(-1, imageCaptureUri)
-            captureImageInternal(
-                doTakePicture = {
-                    cameraUseCase.takePicture({
-                        _previewUiState.update { old ->
-                            (old as? PreviewUiState.Ready)?.copy(
-                                lastBlinkTimeStamp = System.currentTimeMillis()
-                            ) ?: old
-                        }
-                    }, contentResolver, finalImageUri, ignoreUri).savedUri
-                },
-                onSuccess = { savedUri ->
-                    savedUri?.let {
-                        updateLastCapturedImageUri(it)
-                    }
-                    onImageCapture(ImageCaptureEvent.ImageSaved(savedUri), uriIndex)
-                },
-                onFailure = { exception ->
-                    onImageCapture(ImageCaptureEvent.ImageCaptureError(exception), uriIndex)
-                }
+
+            timelapseInteractor.startTimelapse(
+                context,
+                (previewUiState.value as PreviewUiState.Ready).currentCameraSettings
+                    .frequencyConfig.shotsPerDay
             )
             incrementExternalMultipleImageCaptureModeUriIndexIfNeeded()
         }

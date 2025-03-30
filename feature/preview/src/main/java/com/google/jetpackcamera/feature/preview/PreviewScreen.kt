@@ -156,7 +156,15 @@ fun PreviewScreen(
                 onToggleDebugOverlay = viewModel::toggleDebugOverlay,
                 onSetPause = viewModel::setPaused,
                 onSetAudioEnabled = viewModel::setAudioEnabled,
-                onCaptureImageWithUri = viewModel::captureImageWithUri,
+                onCaptureImageWithUri = { resolver, uri, ignoreUri, onCaptureEvent ->
+                    viewModel.captureImageWithUri(
+                        resolver,
+                        uri,
+                        ignoreUri,
+                        onCaptureEvent,
+                        context,
+                    )
+                },
                 onStartVideoRecording = viewModel::startVideoRecording,
                 onStopVideoRecording = viewModel::stopVideoRecording,
                 onLockVideoRecording = viewModel::setLockedRecording,

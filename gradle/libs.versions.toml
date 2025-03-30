@@ -44,6 +44,9 @@ mockitoCore = "5.6.0"
 protobuf = "3.25.2"
 robolectric = "4.14"
 truth = "1.4.2"
+jetbrainsKotlinJvm = "1.9.24"
+material = "1.12.0"
+workManager = "2.10.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
@@ -65,6 +68,7 @@ androidx-rules = { module = "androidx.test:rules", version.ref = "androidxTestRu
 androidx-test-monitor = { module = "androidx.test:monitor", version.ref = "androidxTestMonitor" }
 androidx-tracing = { module = "androidx.tracing:tracing-ktx", version.ref = "androidxTracing" }
 androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidxTestUiautomator" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "androidxCamera" }
 camera-core = { module = "androidx.camera:camera-core", version.ref = "androidxCamera" }
 camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "androidxCamera" }
@@ -91,6 +95,7 @@ mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore
 protobuf-kotlin-lite = { module = "com.google.protobuf:protobuf-kotlin-lite", version.ref = "protobuf" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
@@ -100,3 +105,4 @@ dagger-hilt-android =  { id = "com.google.dagger.hilt.android", version.ref = "h
 google-protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlinPlugin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlinPlugin" }
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }

@@ -144,6 +144,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":data:media"))
     implementation(project(":data:settings"))
+    implementation(project(":feature:timelapse"))
     testImplementation(project(":core:common"))
 }
 
