@@ -17,24 +17,69 @@
 package com.agarsoft.onlapse.timelapse
 
 import android.app.Application
-import android.content.Context
-import androidx.work.OneTimeWorkRequestBuilder
+import android.widget.Toast
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import java.time.Instant
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.toJavaDuration
 
 class TimelapseInteractor @Inject constructor(
-    app: Application
+    val app: Application
 ) {
 
+    private val state = TimelapseCommands.timelapseMutableState
+    private val commands = TimelapseCommands.mutableCommands
+
+    fun toggleTimelapse(framesPerDay: Int) {
+        when (state.value) {
+            is TimelapseInternalState.Idle -> {
+                startTimelapse(framesPerDay)
+            }
+            is TimelapseInternalState.Capturing -> {
+                stopTimelapse()
+            }
+        }
+
+    }
+
     fun startTimelapse(
-        context: Context,
         framesPerDay: Int
     ) {
-        val uploadWorkRequest = OneTimeWorkRequestBuilder<TimelapseWorker>()
+        if (state.value is TimelapseInternalState.Capturing) {
+            throw IllegalStateException("Timelapse already started")
+        }
+
+        state.value = TimelapseInternalState.Capturing(
+            framesCaptured = 0,
+            startTime = Instant.now(),
+        )
+
+        val repeatIntervalHours = 24.0 / framesPerDay
+        val uploadWorkRequest = PeriodicWorkRequestBuilder<TimelapseWorker>(
+            repeatInterval = repeatIntervalHours.hours.toJavaDuration()
+        )
+            .addTag(TimelapseWorker.TAG)
             .build()
 
         WorkManager
-            .getInstance(context)
+            .getInstance(app)
             .enqueue(uploadWorkRequest)
+
+
+
+        Toast.makeText(
+            app,
+            "Timelapse started with $framesPerDay frames per day",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    fun stopTimelapse() {
+        WorkManager
+            .getInstance(app)
+            .cancelAllWorkByTag(TimelapseWorker.TAG)
+        state.value = TimelapseInternalState.Idle
     }
 }

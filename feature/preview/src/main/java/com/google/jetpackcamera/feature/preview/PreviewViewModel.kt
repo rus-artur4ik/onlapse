@@ -32,6 +32,7 @@ import com.agarsoft.onlapse.timelapse.TimelapseCommands
 import com.agarsoft.onlapse.timelapse.TimelapseInteractor
 import com.google.jetpackcamera.core.camera.CameraState
 import com.google.jetpackcamera.core.camera.CameraUseCase
+import com.google.jetpackcamera.core.camera.TimelapseRecordingState
 import com.google.jetpackcamera.core.camera.VideoRecordingState
 import com.google.jetpackcamera.core.common.traceFirstFramePreview
 import com.google.jetpackcamera.feature.preview.ui.IMAGE_CAPTURE_EXTERNAL_UNSUPPORTED_TAG
@@ -76,6 +77,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -127,13 +129,16 @@ class PreviewViewModel @AssistedInject constructor(
     private val snackBarCount = atomic(0)
     private val videoCaptureStartedCount = atomic(0)
 
+    private val timelapseState = TimelapseCommands.getTimelapseState(viewModelScope)
+
     // Eagerly initialize the CameraUseCase and encapsulate in a Deferred that can be
     // used to ensure we don't start the camera before initialization is complete.
     private var initializationDeferred: Deferred<Unit> = viewModelScope.async {
         cameraUseCase.initialize(
             cameraAppSettings = settingsRepository.defaultCameraAppSettings.first()
                 .applyPreviewMode(previewMode),
-            isDebugMode = isDebugMode
+            isDebugMode = isDebugMode,
+            timelapseRecordingState = timelapseState,
         ) { cameraPropertiesJSON = it }
     }
 
@@ -243,7 +248,7 @@ class PreviewViewModel @AssistedInject constructor(
             }.collect {}
         }
 
-        TimelapseCommands.flow
+        TimelapseCommands.commands
             .onEach {
                 when (it) {
                     is TimelapseCommand.CaptureImage -> {
@@ -271,6 +276,31 @@ class PreviewViewModel @AssistedInject constructor(
                         }
                     }
                 }
+            }
+            .launchIn(viewModelScope)
+
+        _previewUiState
+            .filterIsInstance<PreviewUiState.Ready>()
+            .combine(timelapseState) { previewState, timelapseState ->
+                if (previewState.timelapseRecordingState != timelapseState) {
+                    _previewUiState.update {
+                        previewState.copy(
+                            timelapseRecordingState = timelapseState
+                        )
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+
+        timelapseState
+            .combine(_previewUiState) { timelapseState, previewState ->
+                when (previewState) {
+                    PreviewUiState.NotReady -> TimelapseRecordingState.Idle
+                    is PreviewUiState.Ready -> timelapseState
+                }
+            }
+            .onEach { timelapseState ->
+                previewUiState
             }
             .launchIn(viewModelScope)
     }
@@ -329,12 +359,14 @@ class PreviewViewModel @AssistedInject constructor(
 
     private fun getElapsedTimeUiState(
         videoRecordingState: VideoRecordingState
-    ): ElapsedTimeUiState = when (videoRecordingState) {
-        is VideoRecordingState.Active ->
-            ElapsedTimeUiState.Enabled(videoRecordingState.elapsedTimeNanos)
+    ): ElapsedTimeUiState {
+        return when (videoRecordingState) {
+            is VideoRecordingState.Active ->
+                ElapsedTimeUiState.Enabled(videoRecordingState.elapsedTimeNanos)
 
-        is VideoRecordingState.Inactive ->
-            ElapsedTimeUiState.Enabled(videoRecordingState.finalElapsedTimeNanos)
+            is VideoRecordingState.Inactive ->
+                ElapsedTimeUiState.Enabled(videoRecordingState.finalElapsedTimeNanos)
+        }
     }
 
     /**
@@ -500,12 +532,11 @@ class PreviewViewModel @AssistedInject constructor(
     }
     fun getCaptureButtonUiState(
         cameraState: CameraState,
-    ): CaptureButtonUiState = when (cameraState.videoRecordingState) {
-        // if not currently recording, check capturemode to determine idle capture button UI
-        is VideoRecordingState.Inactive -> CaptureButtonUiState.Enabled.Idle
-
-        // display different capture button UI depending on if recording is pressed or locked
-        is VideoRecordingState.Active.Recording -> CaptureButtonUiState.Enabled.RecordingTimelapse
+    ): CaptureButtonUiState {
+        return when (cameraState.timelapseRecordingState) {
+            TimelapseRecordingState.Idle -> CaptureButtonUiState.Enabled.Idle
+            is TimelapseRecordingState.Capturing -> CaptureButtonUiState.Enabled.RecordingTimelapse
+        }
     }
 
     private fun getCaptureToggleUiState(
@@ -800,9 +831,7 @@ class PreviewViewModel @AssistedInject constructor(
         }
         Log.d(TAG, "captureImageWithUri")
         viewModelScope.launch {
-
-            timelapseInteractor.startTimelapse(
-                context,
+            timelapseInteractor.toggleTimelapse(
                 (previewUiState.value as PreviewUiState.Ready).currentCameraSettings
                     .frequencyConfig.shotsPerDay
             )

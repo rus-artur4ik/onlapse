@@ -19,22 +19,40 @@ package com.agarsoft.onlapse.timelapse
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.flow.update
 
 class TimelapseWorker(
     appContext: Context,
     workerParams: WorkerParameters
 ): CoroutineWorker(appContext, workerParams) {
 
-    private val timelapseFlow = TimelapseCommands.mutableFlow
+    private val state = TimelapseCommands.timelapseMutableState
+    private val commandsFlow = TimelapseCommands.mutableCommands
 
     override suspend fun doWork(): Result {
 
+
         // Do the work here--in this case, upload the images.
         println("TimelapseWorker.doWork()")
-        timelapseFlow.emit(TimelapseCommand.CaptureImage)
+        commandsFlow.emit(TimelapseCommand.CaptureImage)
+        state.update {
+            when (val currentState = it) {
+                is TimelapseInternalState.Capturing -> {
+                    val framesCaptured = currentState.framesCaptured + 1
+                    currentState.copy(framesCaptured = framesCaptured)
+                }
+                else -> {
+                    currentState
+                }
+            }
+        }
         println("capture finished")
 
         // Indicate whether the work finished successfully with the Result
         return Result.success()
+    }
+
+    companion object {
+        const val TAG = "TimelapseWorker"
     }
 }

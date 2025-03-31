@@ -60,6 +60,7 @@ import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,6 +69,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
@@ -103,6 +105,8 @@ constructor(
 
     private lateinit var systemConstraints: SystemConstraints
 
+    private lateinit var timelapseState: Flow<TimelapseRecordingState>
+
     private val screenFlashEvents: Channel<CameraUseCase.ScreenFlashEvent> =
         Channel(capacity = Channel.UNLIMITED)
     private val focusMeteringEvents =
@@ -122,6 +126,7 @@ constructor(
     override suspend fun initialize(
         cameraAppSettings: CameraAppSettings,
         isDebugMode: Boolean,
+        timelapseRecordingState: Flow<TimelapseRecordingState>,
         cameraPropertiesJSONCallback: (result: String) -> Unit
     ) {
         cameraProvider = ProcessCameraProvider.awaitInstance(application)
@@ -279,6 +284,8 @@ constructor(
                 Log.d(TAG, "JCACameraProperties written to ${file.path}. \n$cameraPropertiesJSON")
             }
         }
+
+        timelapseState = timelapseRecordingState
     }
 
     override suspend fun runCamera() = coroutineScope {
@@ -390,6 +397,16 @@ constructor(
                             //  coroutineScope by collectLatest should cause this to
                             //  occur naturally.
                             cameraProvider.unbindAll()
+                        }
+                    }
+                }
+
+                launch {
+                    timelapseState.collect { timelapse ->
+                        _currentCameraState.update { cameraState ->
+                            cameraState.copy(
+                                timelapseRecordingState = timelapse
+                            )
                         }
                     }
                 }

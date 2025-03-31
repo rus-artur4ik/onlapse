@@ -215,16 +215,7 @@ private fun CaptureButton(
     val currentColor = LocalContentColor.current
 
     fun shouldBeLocked(): Boolean = switchPosition > MINIMUM_LOCK_THRESHOLD
-    fun toggleSwitchPosition() = if (shouldBeLocked()) {
-        switchPosition = LOCK_SWITCH_POSITION_OFF
-    } else {
-        if (isCaptureButtonPressed == false) {
-            onLockVideoRecording(true)
-        } else {
-            switchPosition =
-                LOCK_SWITCH_POSITION_ON
-        }
-    }
+    
     CaptureButtonRing(
         modifier = modifier
             .pointerInput(Unit) {

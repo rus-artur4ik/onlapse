@@ -2,7 +2,7 @@
 # Used directly in build.gradle.kts files
 compileSdk = "35"
 orchestrator = "1.4.2"
-minSdk = "21"
+minSdk = "26"
 targetSdk = "35"
 composeCompiler = "1.5.14"
 

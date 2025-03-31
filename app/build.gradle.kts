@@ -166,6 +166,9 @@ dependencies {
     // Permissions Screen
     implementation(project(":feature:permissions"))
 
+    // Timelapse feature
+    implementation(project(":feature:timelapse"))
+
     // benchmark
     implementation(libs.androidx.profileinstaller)
 }

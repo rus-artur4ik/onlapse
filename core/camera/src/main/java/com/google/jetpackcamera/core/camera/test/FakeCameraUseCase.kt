@@ -22,6 +22,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.SurfaceRequest
 import com.google.jetpackcamera.core.camera.CameraState
 import com.google.jetpackcamera.core.camera.CameraUseCase
+import com.google.jetpackcamera.core.camera.TimelapseRecordingState
 import com.google.jetpackcamera.settings.model.AspectRatio
 import com.google.jetpackcamera.settings.model.CameraAppSettings
 import com.google.jetpackcamera.settings.model.CaptureMode
@@ -37,6 +38,7 @@ import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig
 import com.google.jetpackcamera.settings.model.VideoQuality
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +68,7 @@ class FakeCameraUseCase(defaultCameraSettings: CameraAppSettings = CameraAppSett
     override suspend fun initialize(
         cameraAppSettings: CameraAppSettings,
         isDebugMode: Boolean,
+        timelapseRecordingState: Flow<TimelapseRecordingState>,
         cameraPropertiesJSONCallback: (result: String) -> Unit
     ) {
         initialized = true

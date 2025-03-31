@@ -120,6 +120,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 import androidx.camera.core.DynamicRange as CXDynamicRange
 
@@ -706,6 +707,37 @@ fun ZoomScaleText(zoomScale: Float) {
             .testTag(ZOOM_RATIO_TAG),
         text = stringResource(id = R.string.zoom_scale_text, zoomScale)
     )
+}
+
+@Composable
+fun TimelapseRecordingIndicator(
+    elapsedTime: Duration,
+    capturedFramesCount: Int,
+    timeToNextShot: Duration,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        val formattedElapsedTime = elapsedTime.toComponents { hours, minutes, seconds, _ ->
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        }
+        Text(
+            modifier = modifier,
+            text = "Elapsed Time: $formattedElapsedTime" // TODO to string resource
+        )
+
+        Text(
+            modifier = modifier,
+            text = "Captured Shots: $capturedFramesCount" // TODO to string resource
+        )
+
+        val nextShot = timeToNextShot.toComponents { hours, minutes, seconds, _ ->
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        }
+        Text(
+            modifier = modifier,
+            text = "Next shot in $nextShot"
+        )
+    }
 }
 
 @Composable

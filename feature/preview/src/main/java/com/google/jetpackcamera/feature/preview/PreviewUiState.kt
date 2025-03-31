@@ -16,6 +16,7 @@
 package com.google.jetpackcamera.feature.preview
 
 import android.util.Size
+import com.google.jetpackcamera.core.camera.TimelapseRecordingState
 import com.google.jetpackcamera.core.camera.VideoRecordingState
 import com.google.jetpackcamera.feature.preview.ui.ImageWellUiState
 import com.google.jetpackcamera.feature.preview.ui.SnackbarData
@@ -40,6 +41,7 @@ sealed interface PreviewUiState {
         val systemConstraints: SystemConstraints = SystemConstraints(),
         val zoomScale: Float = 1f,
         val videoRecordingState: VideoRecordingState = VideoRecordingState.Inactive(),
+        val timelapseRecordingState: TimelapseRecordingState = TimelapseRecordingState.Idle,
         val quickSettingsIsOpen: Boolean = false,
 
         // todo: remove after implementing post capture screen

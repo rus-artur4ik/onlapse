@@ -34,7 +34,9 @@ import com.google.jetpackcamera.settings.model.StreamConfig
 import com.google.jetpackcamera.settings.model.TimelapseFrequencyConfig
 import com.google.jetpackcamera.settings.model.VideoQuality
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import java.time.Instant
 
 /**
  * Data layer for camera.
@@ -48,7 +50,8 @@ interface CameraUseCase {
     suspend fun initialize(
         cameraAppSettings: CameraAppSettings,
         isDebugMode: Boolean = false,
-        cameraPropertiesJSONCallback: (result: String) -> Unit
+        timelapseRecordingState: Flow<TimelapseRecordingState>,
+        cameraPropertiesJSONCallback: (result: String) -> Unit,
     )
 
     /**
@@ -175,8 +178,20 @@ sealed interface VideoRecordingState {
     }
 }
 
+sealed interface TimelapseRecordingState {
+
+    data object Idle : TimelapseRecordingState
+
+    data class Capturing(
+        val startTime: Instant,
+        val framesCaptured: Int,
+        val nextFrameTime: Instant
+    ) : TimelapseRecordingState
+}
+
 data class CameraState(
     val videoRecordingState: VideoRecordingState = VideoRecordingState.Inactive(),
+    val timelapseRecordingState: TimelapseRecordingState = TimelapseRecordingState.Idle,
     val zoomScale: Float = 1f,
     val sessionFirstFrameTimestamp: Long = 0L,
     val torchEnabled: Boolean = false,

@@ -55,6 +55,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.jetpackcamera.core.camera.TimelapseRecordingState
 import com.google.jetpackcamera.core.camera.VideoRecordingState
 import com.google.jetpackcamera.feature.preview.CaptureButtonUiState
 import com.google.jetpackcamera.feature.preview.CaptureModeToggleUiState
@@ -78,6 +79,9 @@ import com.google.jetpackcamera.settings.model.SystemConstraints
 import com.google.jetpackcamera.settings.model.TYPICAL_SYSTEM_CONSTRAINTS
 import com.google.jetpackcamera.settings.model.VideoQuality
 import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.Instant
+import kotlin.time.toKotlinDuration
 
 class ZoomLevelDisplayState(private val alwaysDisplay: Boolean = false) {
     private var _showZoomLevel = mutableStateOf(alwaysDisplay)
@@ -178,7 +182,8 @@ fun CameraControlsOverlay(
                 onStartVideoRecording = onStartVideoRecording,
                 onStopVideoRecording = onStopVideoRecording,
                 onImageWellClick = onImageWellClick,
-                onLockVideoRecording = onLockVideoRecording
+                onLockVideoRecording = onLockVideoRecording,
+                timelapseRecordingState = previewUiState.timelapseRecordingState
             )
         }
     }
@@ -266,6 +271,7 @@ private fun ControlsBottom(
     isQuickSettingsOpen: Boolean,
     systemConstraints: SystemConstraints,
     videoRecordingState: VideoRecordingState,
+    timelapseRecordingState: TimelapseRecordingState,
     onFlipCamera: () -> Unit = {},
     onCaptureImageWithUri: (
         ContentResolver,
@@ -295,6 +301,31 @@ private fun ControlsBottom(
             LocalTextStyle provides LocalTextStyle.current.copy(fontSize = 20.sp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (timelapseRecordingState is TimelapseRecordingState.Capturing) {
+                    var timeLeft by remember {
+                        mutableStateOf(calculateTimeLeft(timelapseRecordingState.nextFrameTime))
+                    }
+                    var elapsedTime by remember {
+                        mutableStateOf(calculateElapsedTime(timelapseRecordingState.startTime))
+                    }
+
+                    // Whenever targetInstant changes, re-run this effect
+                    LaunchedEffect(timelapseRecordingState.nextFrameTime) {
+                        // Repeatedly update the time left once per second
+                        while (true) {
+                            timeLeft = calculateTimeLeft(timelapseRecordingState.nextFrameTime)
+                            elapsedTime = calculateElapsedTime(timelapseRecordingState.startTime)
+                            delay(1000)
+                        }
+                    }
+
+                    TimelapseRecordingIndicator(
+                        elapsedTime = elapsedTime,
+                        capturedFramesCount = timelapseRecordingState.framesCaptured,
+                        timeToNextShot = timeLeft
+                    )
+                }
+
                 if (showZoomLevel) {
                     ZoomScaleText(zoomLevel)
                 }
@@ -536,6 +567,13 @@ private fun CaptureModeToggleButton(
     )
 }
 
+private fun calculateTimeLeft(targetInstant: Instant): kotlin.time.Duration {
+    return Duration.between(Instant.now(), targetInstant).toKotlinDuration()
+}
+private fun calculateElapsedTime(startTime: Instant): kotlin.time.Duration {
+    return Duration.between(startTime, Instant.now()).toKotlinDuration()
+}
+
 @Preview(backgroundColor = 0xFF000000, showBackground = true)
 @Composable
 private fun Preview_ControlsTop_QuickSettingsOpen() {
@@ -628,7 +666,12 @@ private fun Preview_ControlsBottom() {
             showZoomLevel = true,
             isQuickSettingsOpen = false,
             systemConstraints = TYPICAL_SYSTEM_CONSTRAINTS,
-            videoRecordingState = VideoRecordingState.Inactive()
+            videoRecordingState = VideoRecordingState.Inactive(),
+            timelapseRecordingState = TimelapseRecordingState.Capturing(
+                startTime = Instant.now().minusSeconds(25),
+                framesCaptured = 5,
+                nextFrameTime = Instant.now().plusSeconds(5)
+            ),
         )
     }
 }
@@ -649,7 +692,8 @@ private fun Preview_ControlsBottom_NoZoomLevel() {
             showZoomLevel = false,
             isQuickSettingsOpen = false,
             systemConstraints = TYPICAL_SYSTEM_CONSTRAINTS,
-            videoRecordingState = VideoRecordingState.Inactive()
+            videoRecordingState = VideoRecordingState.Inactive(),
+            timelapseRecordingState = TimelapseRecordingState.Idle
         )
     }
 }
@@ -670,7 +714,8 @@ private fun Preview_ControlsBottom_QuickSettingsOpen() {
             showZoomLevel = true,
             isQuickSettingsOpen = true,
             systemConstraints = TYPICAL_SYSTEM_CONSTRAINTS,
-            videoRecordingState = VideoRecordingState.Inactive()
+            videoRecordingState = VideoRecordingState.Inactive(),
+            timelapseRecordingState = TimelapseRecordingState.Idle
         )
     }
 }
@@ -697,7 +742,8 @@ private fun Preview_ControlsBottom_NoFlippableCamera() {
                         TYPICAL_SYSTEM_CONSTRAINTS.perLensConstraints[LensFacing.FRONT]!!
                 )
             ),
-            videoRecordingState = VideoRecordingState.Inactive()
+            videoRecordingState = VideoRecordingState.Inactive(),
+            timelapseRecordingState = TimelapseRecordingState.Idle
         )
     }
 }
@@ -718,7 +764,8 @@ private fun Preview_ControlsBottom_Recording() {
             showZoomLevel = true,
             isQuickSettingsOpen = false,
             systemConstraints = TYPICAL_SYSTEM_CONSTRAINTS,
-            videoRecordingState = VideoRecordingState.Active.Recording(0L, .9, 1_000_000_000)
+            videoRecordingState = VideoRecordingState.Active.Recording(0L, .9, 1_000_000_000),
+            timelapseRecordingState = TimelapseRecordingState.Idle
         )
     }
 }

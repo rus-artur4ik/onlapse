@@ -16,10 +16,16 @@
 package com.google.jetpackcamera
 
 import android.app.Application
+import com.agarsoft.onlapse.timelapse.TimelapseCommands
 import dagger.hilt.android.HiltAndroidApp
 
 /**
  * [Application] class for JetpackCameraApp.
  */
 @HiltAndroidApp
-class JetpackCameraApplication : Application()
+class JetpackCameraApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        TimelapseCommands.initApp(this)
+    }
+}

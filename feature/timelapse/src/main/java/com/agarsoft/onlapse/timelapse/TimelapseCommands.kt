@@ -16,22 +16,104 @@
 
 package com.agarsoft.onlapse.timelapse
 
+import android.app.Application
+import android.widget.Toast
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import com.agarsoft.onlapse.timelapse.TimelapseInternalState.Idle
+import com.google.jetpackcamera.core.camera.TimelapseRecordingState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import java.time.Instant
 
 object TimelapseCommands {
 
-    internal val mutableFlow = MutableSharedFlow<TimelapseCommand>(
+    private val appFlow = MutableStateFlow<Application?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val scheduledInstantsFlow = appFlow
+        .filterNotNull()
+        .flatMapLatest { app ->
+            WorkManager
+                .getInstance(app)
+                .getWorkInfosByTagFlow(TimelapseWorker.TAG)
+                .map { list ->
+                    list
+                        .filter {
+                            it.state == WorkInfo.State.ENQUEUED
+                        }
+                        .map {
+                            Instant.ofEpochMilli(
+                                it.nextScheduleTimeMillis
+                            )
+                        }
+                }
+                .onEach {
+                    if (it.size > 1) {
+                        Toast.makeText(
+                            app,
+                            "Multiple work requests scheduled: ${it.size}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+        }
+
+    internal val mutableCommands = MutableSharedFlow<TimelapseCommand>(
         replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_LATEST
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.SUSPEND
     )
 
-    val flow = mutableFlow.asSharedFlow()
+    val commands = mutableCommands.asSharedFlow()
+
+    internal val timelapseMutableState = MutableStateFlow<TimelapseInternalState>(Idle)
+
+    internal val state = timelapseMutableState.asStateFlow()
+
+    fun initApp(app: Application) {
+        appFlow.tryEmit(app)
+    }
+
+    fun getTimelapseState(scope: CoroutineScope): Flow<TimelapseRecordingState> {
+        return state.combine(scheduledInstantsFlow) { state, nextTimes ->
+                when (state) {
+                    Idle -> TimelapseRecordingState.Idle
+                    is TimelapseInternalState.Capturing -> TimelapseRecordingState.Capturing(
+                        startTime = state.startTime,
+                        framesCaptured = state.framesCaptured,
+                        nextFrameTime = nextTimes.firstOrNull() ?: Instant.MAX
+                    )
+                }
+            }
+            .stateIn(scope, SharingStarted.Eagerly, TimelapseRecordingState.Idle)
+    }
 }
 
 sealed class TimelapseCommand {
 
     data object CaptureImage : TimelapseCommand()
+}
+
+internal sealed class TimelapseInternalState {
+
+    object Idle : TimelapseInternalState()
+
+    data class Capturing(
+        val startTime: Instant,
+        val framesCaptured: Int
+    ) : TimelapseInternalState()
 }
