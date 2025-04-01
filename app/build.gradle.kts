@@ -19,6 +19,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -168,6 +169,7 @@ dependencies {
 
     // Timelapse feature
     implementation(project(":feature:timelapse"))
+    implementation(project(":feature:transferring"))
 
     // benchmark
     implementation(libs.androidx.profileinstaller)

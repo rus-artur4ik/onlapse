@@ -105,7 +105,12 @@ object TimelapseCommands {
 
 sealed class TimelapseCommand {
 
-    data object CaptureImage : TimelapseCommand()
+    data class CaptureImage(
+        val timelapseName: String,
+        val onCaptured: () -> Unit
+    ) : TimelapseCommand()
+
+    data object OnImageCaptured : TimelapseCommand()
 }
 
 internal sealed class TimelapseInternalState {

@@ -19,7 +19,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
@@ -28,7 +27,6 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -52,10 +50,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.tracing.Trace
+import com.agarsoft.onlapse.transferring.TransferInteractor
 import com.google.jetpackcamera.MainActivityUiState.Loading
 import com.google.jetpackcamera.MainActivityUiState.Success
 import com.google.jetpackcamera.core.common.traceFirstFrameMainActivity
@@ -69,6 +69,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 private const val TAG = "MainActivity"
 private const val KEY_DEBUG_MODE = "KEY_DEBUG_MODE"
@@ -80,7 +81,9 @@ private const val KEY_DEBUG_MODE = "KEY_DEBUG_MODE"
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
 
-    @RequiresApi(Build.VERSION_CODES.M)
+    @Inject
+    lateinit var transferInteractor: TransferInteractor
+
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,6 +111,7 @@ class MainActivity : ComponentActivity() {
         }
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        transferInteractor.initialize(lifecycleScope)
 
         setContent {
             when (uiState) {
@@ -144,14 +148,12 @@ class MainActivity : ComponentActivity() {
                                 openAppSettings = ::openAppSettings,
                                 onRequestWindowColorMode = { colorMode ->
                                     // Window color mode APIs require API level 26+
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        Log.d(
-                                            TAG,
-                                            "Setting window color mode to:" +
-                                                " ${colorMode.toColorModeString()}"
-                                        )
-                                        window?.colorMode = colorMode
-                                    }
+                                    Log.d(
+                                        TAG,
+                                        "Setting window color mode to:" +
+                                            " ${colorMode.toColorModeString()}"
+                                    )
+                                    window?.colorMode = colorMode
                                 },
                                 onFirstFrameCaptureCompleted = {
                                     firstFrameComplete?.complete(Unit)
@@ -193,7 +195,7 @@ class MainActivity : ComponentActivity() {
         } else {
             val result = mutableListOf<Uri>()
             for (string in stringUris) {
-                result.add(Uri.parse(string))
+                result.add(string.toUri())
             }
             return result
         }
@@ -276,7 +278,6 @@ private fun isInDarkMode(uiState: MainActivityUiState): Boolean = when (uiState)
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 private fun Int.toColorModeString(): String {
     return when (this) {
         ActivityInfo.COLOR_MODE_DEFAULT -> "COLOR_MODE_DEFAULT"

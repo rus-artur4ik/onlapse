@@ -19,6 +19,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -145,6 +146,7 @@ dependencies {
     implementation(project(":data:media"))
     implementation(project(":data:settings"))
     implementation(project(":feature:timelapse"))
+    implementation(project(":feature:transferring"))
     testImplementation(project(":core:common"))
 }
 

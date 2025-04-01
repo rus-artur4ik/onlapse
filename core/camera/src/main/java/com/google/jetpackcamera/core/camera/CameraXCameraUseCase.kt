@@ -73,6 +73,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -490,8 +491,9 @@ constructor(
             Log.d(TAG, "takePicture onError: $e")
             throw e
         } else {
+            var outputStream: OutputStream? = null
             try {
-                val outputStream = contentResolver.openOutputStream(imageCaptureUri)
+                outputStream = contentResolver.openOutputStream(imageCaptureUri)
                 if (outputStream != null) {
                     outputFileOptions =
                         OutputFileOptions.Builder(
@@ -505,6 +507,8 @@ constructor(
             } catch (e: FileNotFoundException) {
                 Log.d(TAG, "takePicture onError: $e")
                 throw e
+            } finally {
+                outputStream?.close()
             }
         }
         try {

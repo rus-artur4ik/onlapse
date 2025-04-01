@@ -19,6 +19,7 @@ package com.agarsoft.onlapse.timelapse
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.agarsoft.onlapse.timelapse.TimelapseNameProvider.DEFAULT_TIMELAPSE_NAME
 import kotlinx.coroutines.flow.update
 
 class TimelapseWorker(
@@ -30,11 +31,13 @@ class TimelapseWorker(
     private val commandsFlow = TimelapseCommands.mutableCommands
 
     override suspend fun doWork(): Result {
-
-
         // Do the work here--in this case, upload the images.
         println("TimelapseWorker.doWork()")
-        commandsFlow.emit(TimelapseCommand.CaptureImage)
+        commandsFlow.emit(
+            TimelapseCommand.CaptureImage(timelapseName = DEFAULT_TIMELAPSE_NAME) {
+                onImageCaptured()
+            }
+        )
         state.update {
             when (val currentState = it) {
                 is TimelapseInternalState.Capturing -> {
@@ -50,6 +53,10 @@ class TimelapseWorker(
 
         // Indicate whether the work finished successfully with the Result
         return Result.success()
+    }
+
+    private fun onImageCaptured() {
+        commandsFlow.tryEmit(TimelapseCommand.OnImageCaptured)
     }
 
     companion object {

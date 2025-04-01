@@ -30,6 +30,7 @@ import androidx.tracing.traceAsync
 import com.agarsoft.onlapse.timelapse.TimelapseCommand
 import com.agarsoft.onlapse.timelapse.TimelapseCommands
 import com.agarsoft.onlapse.timelapse.TimelapseInteractor
+import com.agarsoft.onlapse.transferring.TransferringSettings
 import com.google.jetpackcamera.core.camera.CameraState
 import com.google.jetpackcamera.core.camera.CameraUseCase
 import com.google.jetpackcamera.core.camera.TimelapseRecordingState
@@ -252,7 +253,7 @@ class PreviewViewModel @AssistedInject constructor(
             .onEach {
                 when (it) {
                     is TimelapseCommand.CaptureImage -> {
-                        captureTimelapseShot { event, uriIndex ->
+                        captureTimelapseShot(it.timelapseName) { event, uriIndex ->
                             when (event) {
                                 is ImageCaptureEvent.ImageSaved -> {
                                     addSnackBarData(
@@ -262,6 +263,7 @@ class PreviewViewModel @AssistedInject constructor(
                                             withDismissAction = true
                                         )
                                     )
+                                    it.onCaptured()
                                 }
                                 is ImageCaptureEvent.ImageCaptureError -> {
                                     addSnackBarData(
@@ -275,6 +277,8 @@ class PreviewViewModel @AssistedInject constructor(
                             }
                         }
                     }
+
+                    else -> {}
                 }
             }
             .launchIn(viewModelScope)
@@ -307,6 +311,7 @@ class PreviewViewModel @AssistedInject constructor(
 
     // TODO restrict or check uri to make it not to be lost
     private suspend fun captureTimelapseShot(
+        timelapseName: String,
         onImageCapture: (ImageCaptureEvent, Int) -> Unit
     ) {
         val (uriIndex: Int, finalImageUri: Uri?) =
@@ -321,19 +326,21 @@ class PreviewViewModel @AssistedInject constructor(
                     }
                     Pair(externalUriIndex, uri)
                 } ?: Pair(-1, null)
+
+        val captureUri = TransferringSettings.getTimelapseShotUri(application, timelapseName)
         captureImageInternal(
             doTakePicture = {
                 cameraUseCase.takePicture(
-                    {
+                    onCaptureStarted = {
                         _previewUiState.update { old ->
                             (old as? PreviewUiState.Ready)?.copy(
                                 lastBlinkTimeStamp = System.currentTimeMillis()
                             ) ?: old
                         }
                     },
-                    application.contentResolver,
-                    finalImageUri,
-                    true
+                    contentResolver = application.contentResolver,
+                    imageCaptureUri = captureUri,
+                    ignoreUri = false
                 ).savedUri
             },
             onSuccess = { savedUri ->
