@@ -20,8 +20,8 @@ import android.app.Application
 import android.widget.Toast
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.agarsoft.onlapse.core.camera.TimelapseRecordingState
 import com.agarsoft.onlapse.timelapse.TimelapseInternalState.Idle
-import com.google.jetpackcamera.core.camera.TimelapseRecordingState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow

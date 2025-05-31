@@ -1,10 +1,10 @@
 [versions]
 # Used directly in build.gradle.kts files
-compileSdk = "35"
+compileSdk = "36"
 orchestrator = "1.5.1"
 minSdk = "26"
 slf4jAndroid = "1.7.36"
-targetSdk = "35"
+targetSdk = "36"
 composeCompiler = "1.5.14"
 
 # Used below in dependency definitions
@@ -15,7 +15,7 @@ accompanist = "0.36.0"
 # kotlinPlugin and composeCompiler are linked
 # See https://developer.android.com/jetpack/androidx/releases/compose-kotlin
 kotlinPlugin = "2.0.0"
-androidGradlePlugin = "8.7.3"
+androidGradlePlugin = "8.10.1"
 protobufPlugin = "0.9.4"
 
 androidxActivityCompose = "1.10.1"
@@ -49,6 +49,9 @@ jetbrainsKotlinJvm = "1.9.24"
 material = "1.12.0"
 workManager = "2.10.0"
 ktor = "3.1.2"
+lifecycleRuntimeKtx = "2.9.0"
+runtimeAndroid = "1.8.2"
+foundationLayoutAndroid = "1.8.2"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
@@ -102,6 +105,11 @@ truth = { module = "com.google.truth:truth", version.ref = "truth" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

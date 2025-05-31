@@ -22,7 +22,7 @@ plugins {
 }
 
 android {
-    namespace = "com.google.jetpackcamera.feature.postcapture"
+    namespace = "com.agarsoft.onlapse.feature.postcapture"
     compileSdk = 35
 
     defaultConfig {

@@ -19,15 +19,17 @@ package com.agarsoft.onlapse.transferring
 import android.app.Application
 import android.util.Log
 import android.widget.Toast
+import com.agarsoft.onlapse.core.common.retryWithBackoff
 import com.agarsoft.onlapse.timelapse.TimelapseCommand
 import com.agarsoft.onlapse.timelapse.TimelapseCommands
 import com.agarsoft.onlapse.timelapse.TimelapseNameProvider.DEFAULT_TIMELAPSE_NAME
-import com.google.jetpackcamera.core.common.retryWithBackoff
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 class TransferInteractor @Inject constructor(
     private val application: Application,
@@ -60,7 +62,9 @@ class TransferInteractor @Inject constructor(
         imageUrls.forEach { imageUrl ->
             try {
                 retryWithBackoff {
-                    api.uploadImage(imageUrl, timelapseName)
+//                    api.uploadImage(imageUrl, timelapseName)
+                    delay(10.seconds)
+                    throw Exception("Simulated upload failure")
                 }
                 imageUrl.delete()
                 Toast.makeText(application, "Image uploaded", Toast.LENGTH_SHORT).show()

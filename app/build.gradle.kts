@@ -25,10 +25,10 @@ plugins {
 android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
-    namespace = "com.google.jetpackcamera"
+    namespace = "com.agarsoft.onlapse"
 
     defaultConfig {
-        applicationId = "com.google.jetpackcamera"
+        applicationId = "com.agarsoft.onlapse"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
@@ -170,6 +170,8 @@ dependencies {
     // Timelapse feature
     implementation(project(":feature:timelapse"))
     implementation(project(":feature:transferring"))
+    implementation(project(":feature:viewer"))
+    implementation(project(":feature:storageinfo"))
 
     // benchmark
     implementation(libs.androidx.profileinstaller)

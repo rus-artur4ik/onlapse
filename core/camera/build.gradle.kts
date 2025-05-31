@@ -22,7 +22,7 @@ plugins {
 }
 
 android {
-    namespace = "com.google.jetpackcamera.core.camera"
+    namespace = "com.agarsoft.onlapse.core.camera"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {

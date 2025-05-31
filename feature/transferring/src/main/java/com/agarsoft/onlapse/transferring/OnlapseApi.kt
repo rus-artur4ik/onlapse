@@ -54,7 +54,7 @@ class OnlapseApi {
                         // We can also add some additional data here
                         append(HttpHeaders.ContentDisposition, """filename="${file.name}"""")
                         append(TIMELAPSE_NAME_HEADER, timelapseName)
-                    }
+                    },
                 )
             }
         )
