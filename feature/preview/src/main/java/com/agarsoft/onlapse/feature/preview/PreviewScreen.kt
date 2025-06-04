@@ -52,9 +52,27 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.tracing.Trace
 import com.agarsoft.onlapse.core.camera.VideoRecordingState
+import com.agarsoft.onlapse.core.camera.VideoRecordingState.Active.Recording
+import com.agarsoft.onlapse.core.common.getLastImageUri
+import com.agarsoft.onlapse.feature.preview.quicksettings.QuickSettingsScreenOverlay
+import com.agarsoft.onlapse.feature.preview.ui.CameraControlsOverlay
 import com.agarsoft.onlapse.feature.preview.ui.PreviewDisplay
+import com.agarsoft.onlapse.feature.preview.ui.ScreenFlashScreen
 import com.agarsoft.onlapse.feature.preview.ui.TestableSnackbar
 import com.agarsoft.onlapse.feature.preview.ui.TestableToast
+import com.agarsoft.onlapse.feature.preview.ui.ZoomLevelDisplayState
+import com.agarsoft.onlapse.feature.preview.ui.debouncedOrientationFlow
+import com.agarsoft.onlapse.feature.preview.ui.debug.DebugOverlayComponent
+import com.agarsoft.onlapse.settings.model.AspectRatio
+import com.agarsoft.onlapse.settings.model.ConcurrentCameraMode
+import com.agarsoft.onlapse.settings.model.DEFAULT_CAMERA_APP_SETTINGS
+import com.agarsoft.onlapse.settings.model.DynamicRange
+import com.agarsoft.onlapse.settings.model.FlashMode
+import com.agarsoft.onlapse.settings.model.ImageOutputFormat
+import com.agarsoft.onlapse.settings.model.LensFacing
+import com.agarsoft.onlapse.settings.model.StreamConfig
+import com.agarsoft.onlapse.settings.model.TYPICAL_SYSTEM_CONSTRAINTS
+import com.agarsoft.onlapse.settings.model.TimelapseFrequencyConfig
 import kotlinx.coroutines.flow.transformWhile
 
 private const val TAG = "PreviewScreen"
@@ -114,7 +132,7 @@ fun PreviewScreen(
         is PreviewUiState.Ready -> {
             val context = LocalContext.current
             LaunchedEffect(Unit) {
-                _root_ide_package_.com.agarsoft.onlapse.feature.preview.ui.debouncedOrientationFlow(
+                debouncedOrientationFlow(
                     context
                 ).collect(viewModel::setDisplayRotation)
             }
@@ -163,7 +181,7 @@ fun PreviewScreen(
             // TODO(yasith): Remove and use ImageRepository after implementing
             LaunchedEffect(Unit) {
                 val lastCapturedImageUri =
-                    _root_ide_package_.com.agarsoft.onlapse.core.common.getLastImageUri(context)
+                    getLastImageUri(context)
                 lastCapturedImageUri?.let { uri ->
                     viewModel.updateLastCapturedImageUri(uri)
                 }
@@ -181,16 +199,16 @@ private fun ContentScreen(
     modifier: Modifier = Modifier,
     onNavigateToSettings: () -> Unit = {},
     onClearUiScreenBrightness: (Float) -> Unit = {},
-    onSetLensFacing: (newLensFacing: com.agarsoft.onlapse.settings.model.LensFacing) -> Unit = {},
+    onSetLensFacing: (newLensFacing: LensFacing) -> Unit = {},
     onTapToFocus: (x: Float, y: Float) -> Unit = { _, _ -> },
     onChangeZoomScale: (Float) -> Unit = {},
-    onChangeFlash: (com.agarsoft.onlapse.settings.model.FlashMode) -> Unit = {},
-    onChangeAspectRatio: (com.agarsoft.onlapse.settings.model.AspectRatio) -> Unit = {},
-    onSetStreamConfig: (com.agarsoft.onlapse.settings.model.StreamConfig) -> Unit = {},
-    onSetTimelapseFrequencyConfig: (com.agarsoft.onlapse.settings.model.TimelapseFrequencyConfig) -> Unit = {},
-    onChangeDynamicRange: (com.agarsoft.onlapse.settings.model.DynamicRange) -> Unit = {},
-    onChangeConcurrentCameraMode: (com.agarsoft.onlapse.settings.model.ConcurrentCameraMode) -> Unit = {},
-    onChangeImageFormat: (com.agarsoft.onlapse.settings.model.ImageOutputFormat) -> Unit = {},
+    onChangeFlash: (FlashMode) -> Unit = {},
+    onChangeAspectRatio: (AspectRatio) -> Unit = {},
+    onSetStreamConfig: (StreamConfig) -> Unit = {},
+    onSetTimelapseFrequencyConfig: (TimelapseFrequencyConfig) -> Unit = {},
+    onChangeDynamicRange: (DynamicRange) -> Unit = {},
+    onChangeConcurrentCameraMode: (ConcurrentCameraMode) -> Unit = {},
+    onChangeImageFormat: (ImageOutputFormat) -> Unit = {},
     onToggleWhenDisabled: (CaptureModeToggleUiState.DisabledReason) -> Unit = {},
     onToggleQuickSettings: () -> Unit = {},
     onToggleDebugOverlay: () -> Unit = {},
@@ -246,7 +264,7 @@ private fun ContentScreen(
                 onRequestWindowColorMode = onRequestWindowColorMode
             )
 
-            _root_ide_package_.com.agarsoft.onlapse.feature.preview.quicksettings.QuickSettingsScreenOverlay(
+            QuickSettingsScreenOverlay(
                 modifier = Modifier,
                 previewUiState = previewUiState,
                 isOpen = previewUiState.quickSettingsIsOpen,
@@ -262,7 +280,7 @@ private fun ContentScreen(
                 onFrequencyConfigClick = onSetTimelapseFrequencyConfig,
             )
             // relative-grid style overlay on top of preview display
-            _root_ide_package_.com.agarsoft.onlapse.feature.preview.ui.CameraControlsOverlay(
+            CameraControlsOverlay(
                 previewUiState = previewUiState,
                 onNavigateToSettings = onNavigateToSettings,
                 onFlipCamera = onFlipCamera,
@@ -277,7 +295,7 @@ private fun ContentScreen(
                 onStartVideoRecording = onStartVideoRecording,
                 onStopVideoRecording = onStopVideoRecording,
                 zoomLevelDisplayState = remember {
-                    _root_ide_package_.com.agarsoft.onlapse.feature.preview.ui.ZoomLevelDisplayState(
+                    ZoomLevelDisplayState(
                         isDebugMode
                     )
                 },
@@ -285,7 +303,7 @@ private fun ContentScreen(
                 onLockVideoRecording = onLockVideoRecording
             )
 
-            _root_ide_package_.com.agarsoft.onlapse.feature.preview.ui.debug.DebugOverlayComponent(
+            DebugOverlayComponent(
                 toggleIsOpen = onToggleDebugOverlay,
                 previewUiState = previewUiState,
                 onChangeZoomScale = onChangeZoomScale
@@ -314,7 +332,7 @@ private fun ContentScreen(
             // may still be running after flash mode change and clear actions (e.g. brightness restore)
             // may need to be handled later. Compose smart recomposition should be able to optimize this
             // if the relevant states are no longer changing.
-            _root_ide_package_.com.agarsoft.onlapse.feature.preview.ui.ScreenFlashScreen(
+            ScreenFlashScreen(
                 screenFlashUiState = screenFlashUiState,
                 onInitialBrightnessCalculated = onClearUiScreenBrightness
             )
@@ -401,15 +419,15 @@ private fun ContentScreen_Standard_Recording() {
 }
 
 private val FAKE_PREVIEW_UI_STATE_READY = PreviewUiState.Ready(
-    currentCameraSettings = _root_ide_package_.com.agarsoft.onlapse.settings.model.DEFAULT_CAMERA_APP_SETTINGS,
+    currentCameraSettings = DEFAULT_CAMERA_APP_SETTINGS,
     videoRecordingState = VideoRecordingState.Inactive(),
-    systemConstraints = _root_ide_package_.com.agarsoft.onlapse.settings.model.TYPICAL_SYSTEM_CONSTRAINTS,
+    systemConstraints = TYPICAL_SYSTEM_CONSTRAINTS,
     previewMode = PreviewMode.StandardMode {},
     captureModeToggleUiState = CaptureModeToggleUiState.Invisible
 )
 
 private val FAKE_PREVIEW_UI_STATE_PRESSED_RECORDING = FAKE_PREVIEW_UI_STATE_READY.copy(
-    videoRecordingState = VideoRecordingState.Active.Recording(0, 0.0, 0),
+    videoRecordingState = Recording(0, 0.0, 0),
     captureButtonUiState = CaptureButtonUiState.Enabled.RecordingTimelapse,
     audioUiState = AudioUiState.Enabled.On(1.0)
 )

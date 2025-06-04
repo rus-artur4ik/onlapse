@@ -91,7 +91,13 @@ private fun JetpackCameraNavHost(
         }
 
         composable(Routes.STORAGE_INFO_ROUTE) {
-            StorageInfoScreen()
+            StorageInfoScreen(
+                onOpenImage = { imageUri ->
+                    navController.navigate(
+                        "${Routes.POST_CAPTURE_ROUTE}?imageUri=${Uri.encode(imageUri.toString())}"
+                    )
+                }
+            )
         }
 
         composable(Routes.PERMISSIONS_ROUTE) {

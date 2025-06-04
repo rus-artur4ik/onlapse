@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.agarsoft.onlapse.core.common.loadAndRotateBitmap
 import kotlin.math.min
 
 @Composable
@@ -45,7 +46,7 @@ fun ImageWell(
 
     when (imageWellUiState) {
         is ImageWellUiState.LastCapture -> {
-            val bitmap = _root_ide_package_.com.agarsoft.onlapse.core.common.loadAndRotateBitmap(
+            val bitmap = loadAndRotateBitmap(
                 context,
                 imageWellUiState.uri,
                 270f
